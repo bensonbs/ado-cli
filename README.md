@@ -25,15 +25,15 @@ cd ado-cli
 npm install
 npm link
 
-# 2. Set your PAT
+# 2. Configure .env
 cp .env.example .env
-echo "ADO_PAT=your-token-here" > .env
+# Edit .env: set ADO_PAT, ADO_ORG, ADO_PROJECT
 
 # 3. Install Claude Code skill (optional but recommended)
 ./install-skill.sh
 
 # 4. Verify
-ado --org your-org whoami
+ado whoami
 ```
 
 Done. You now have the `ado` CLI globally and the `/ado` skill in Claude Code.
@@ -55,13 +55,15 @@ npm link    # makes `ado` available globally
 cp .env.example .env
 ```
 
-Edit `.env` and add your Personal Access Token:
+Edit `.env`:
 
 ```
 ADO_PAT=your-personal-access-token
+ADO_ORG=your-organization
+ADO_PROJECT=your-project-name
 ```
 
-Organization and project are passed as CLI flags per command, so a single PAT is all you need.
+`ADO_ORG` and `ADO_PROJECT` are optional defaults — you can always override them with `--org` / `--project` flags.
 
 #### Getting a PAT
 
@@ -97,16 +99,16 @@ Every command accepts these flags:
 
 | Flag | Description |
 |------|-------------|
-| `--org <org>` | Azure DevOps organization (required) |
-| `--project <project>` | Azure DevOps project name (required for most commands) |
-| `--area <area>` | Area path (defaults to `--project` value) |
+| `--org <org>` | Azure DevOps organization (defaults to `ADO_ORG` in `.env`) |
+| `--project <project>` | Azure DevOps project name (defaults to `ADO_PROJECT` in `.env`) |
+| `--area <area>` | Area path (defaults to `ADO_AREA_PATH` or `--project` value) |
 | `--pat <token>` | Override PAT from `.env` |
 
 ```bash
-# Example: specify org and project
-ado --org MyOrg --project MyProject sprint current
+# Uses defaults from .env
+ado sprint current
 
-# Switch to a different org/project in the next command
+# Override to a different org/project
 ado --org OtherOrg --project OtherProject wi list --state Active
 ```
 
@@ -116,27 +118,27 @@ ado --org OtherOrg --project OtherProject wi list --state Active
 
 ```bash
 # Get the current sprint
-ado --org MyOrg --project MyProject sprint current
+adosprint current
 
 # List all sprints (filter: past, current, future)
-ado --org MyOrg --project MyProject sprint list
-ado --org MyOrg --project MyProject sprint list --timeframe current
+adosprint list
+adosprint list --timeframe current
 
 # List work items in current sprint
-ado --org MyOrg --project MyProject sprint workitems
+adosprint workitems
 ```
 
 ### Work Items — Create
 
 ```bash
 # Create an Issue
-ado --org MyOrg --project MyProject wi create-issue --title "Improve: login flow"
+adowi create-issue --title "Improve: login flow"
 
 # Create a Task linked to a parent Issue
-ado --org MyOrg --project MyProject wi create-task --title "Add export button" --parent 1234
+adowi create-task --title "Add export button" --parent 1234
 
 # Create a Task with HTML description
-ado --org MyOrg --project MyProject wi create-task \
+adowi create-task \
   --title "Fix timeout issue" \
   --description "<p>Increased timeout from 30s to 60s</p>" \
   --parent 1234
@@ -147,7 +149,7 @@ ado --org MyOrg --project MyProject wi create-task \
 One command to create Issue + Task + commit link:
 
 ```bash
-ado --org MyOrg --project MyProject wi create-card \
+adowi create-card \
   --issue-title "Improve: upload stability" \
   --task-title "Fix upload timeout" \
   --task-description "<p>Root cause: 30s timeout too short</p>" \
@@ -159,44 +161,44 @@ ado --org MyOrg --project MyProject wi create-card \
 
 ```bash
 # Get a work item by ID
-ado --org MyOrg --project MyProject wi get 1234
+adowi get 1234
 
 # List work items with filters
-ado --org MyOrg --project MyProject wi list --iteration "Project\Sprint 2026-05"
-ado --org MyOrg --project MyProject wi list --state Active --type Task
-ado --org MyOrg --project MyProject wi list --assigned-to "John Doe"
+adowi list --iteration "Project\Sprint 2026-05"
+adowi list --state Active --type Task
+adowi list --assigned-to "John Doe"
 
 # List child items of a parent
-ado --org MyOrg --project MyProject wi children 1234
+adowi children 1234
 
 # Run a custom WIQL query
-ado --org MyOrg --project MyProject wi query "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'"
+adowi query "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'"
 ```
 
 ### Work Items — Update
 
 ```bash
 # Update fields
-ado --org MyOrg --project MyProject wi update 1234 --title "New title" --state Active
+adowi update 1234 --title "New title" --state Active
 
 # Quick close
-ado --org MyOrg --project MyProject wi close 1234
+adowi close 1234
 
 # Quick assign
-ado --org MyOrg --project MyProject wi assign 1234 --to "John Doe"
+adowi assign 1234 --to "John Doe"
 ```
 
 ### Work Items — Comment & Delete
 
 ```bash
 # Add a comment
-ado --org MyOrg --project MyProject wi comment 1234 --text "Deployed to staging"
+adowi comment 1234 --text "Deployed to staging"
 
 # Delete (moves to recycle bin)
-ado --org MyOrg --project MyProject wi delete 1234
+adowi delete 1234
 
 # Permanently delete
-ado --org MyOrg --project MyProject wi delete 1234 --destroy
+adowi delete 1234 --destroy
 ```
 
 ### Repo Info & Commit Linking
@@ -206,10 +208,10 @@ ado --org MyOrg --project MyProject wi delete 1234 --destroy
 ado repo info --remote-url "https://dev.azure.com/MyOrg/MyProject/_git/MyRepo"
 
 # Or specify explicitly
-ado --org MyOrg repo info --repo-project MyProject --repo-name MyRepo
+ado repo info --repo-project MyProject --repo-name MyRepo
 
 # Link a commit to a task
-ado --org MyOrg --project MyProject wi link-commit \
+adowi link-commit \
   --task-id 1234 \
   --project-id <guid> \
   --repo-id <guid> \
@@ -223,7 +225,7 @@ ado --org MyOrg --project MyProject wi link-commit \
 git add -A && git commit -m "fix: resolve timeout" && git push
 
 # 2. Get current sprint
-ado --org MyOrg --project MyProject sprint current
+adosprint current
 # → { "path": "Project\\Sprint 2026-05", ... }
 
 # 3. Get repo info
@@ -231,7 +233,7 @@ ado repo info --remote-url "$(git remote get-url origin)"
 # → { "projectId": "xxx", "repoId": "yyy", ... }
 
 # 4. Create card (Issue + Task + commit link) in one step
-ado --org MyOrg --project MyProject wi create-card \
+adowi create-card \
   --issue-title "Improve: file upload stability" \
   --task-title "Fix upload timeout" \
   --task-description "<p>30s timeout too short for large files</p>" \
@@ -264,7 +266,7 @@ ado --org MyOrg --project MyProject wi create-card \
 ## Claude Code Skill
 
 The installed skill teaches Claude to:
-- Discover orgs and projects (`ado --org ORG projects`)
+- Discover orgs and projects (`ado projects`)
 - Query sprints and work items
 - Create cards (Issue + Task + commit link) in one step
 - Follow complex workflows automatically

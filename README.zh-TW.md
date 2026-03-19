@@ -25,15 +25,15 @@ cd ado-cli
 npm install
 npm link
 
-# 2. 設定 PAT
+# 2. 設定 .env
 cp .env.example .env
-echo "ADO_PAT=your-token-here" > .env
+# 編輯 .env：設定 ADO_PAT、ADO_ORG、ADO_PROJECT
 
 # 3. 安裝 Claude Code skill（選用但建議）
 ./install-skill.sh
 
 # 4. 驗證
-ado --org your-org whoami
+ado whoami
 ```
 
 完成。你現在有全域的 `ado` 指令，以及 Claude Code 中的 `/ado` skill。
@@ -55,13 +55,15 @@ npm link    # 讓 `ado` 全域可用
 cp .env.example .env
 ```
 
-編輯 `.env`，加入你的 Personal Access Token：
+編輯 `.env`：
 
 ```
-ADO_PAT=你的-personal-access-token
+ADO_PAT=your-personal-access-token
+ADO_ORG=your-organization
+ADO_PROJECT=your-project-name
 ```
 
-組織和專案透過 CLI flag 傳入，一個 PAT 就夠了。
+`ADO_ORG` 和 `ADO_PROJECT` 是選用的預設值，隨時可用 `--org` / `--project` flag 覆蓋。
 
 #### 取得 PAT
 
@@ -97,16 +99,16 @@ cp .claude/skills/ado/SKILL.md your-project/.claude/skills/ado/
 
 | Flag | 說明 |
 |------|------|
-| `--org <org>` | Azure DevOps 組織名稱（必要） |
-| `--project <project>` | Azure DevOps 專案名稱（大部分指令必要） |
-| `--area <area>` | Area path（預設等同 `--project`） |
+| `--org <org>` | Azure DevOps 組織名稱（預設讀取 `.env` 的 `ADO_ORG`） |
+| `--project <project>` | Azure DevOps 專案名稱（預設讀取 `.env` 的 `ADO_PROJECT`） |
+| `--area <area>` | Area path（預設讀取 `ADO_AREA_PATH` 或等同 `--project`） |
 | `--pat <token>` | 覆蓋 `.env` 裡的 PAT |
 
 ```bash
-# 範例：指定組織和專案
-ado --org MyOrg --project MyProject sprint current
+# 使用 .env 預設值
+ado sprint current
 
-# 下一個指令切換到不同的組織/專案
+# 覆蓋為不同的組織/專案
 ado --org OtherOrg --project OtherProject wi list --state Active
 ```
 
@@ -116,26 +118,26 @@ ado --org OtherOrg --project OtherProject wi list --state Active
 
 ```bash
 # 取得當前 Sprint
-ado --org MyOrg --project MyProject sprint current
+adosprint current
 
 # 列出所有 Sprint（篩選：past, current, future）
-ado --org MyOrg --project MyProject sprint list --timeframe current
+adosprint list --timeframe current
 
 # 列出當前 Sprint 的工作項目
-ado --org MyOrg --project MyProject sprint workitems
+adosprint workitems
 ```
 
 ### Work Items — 建立
 
 ```bash
 # 建立 Issue
-ado --org MyOrg --project MyProject wi create-issue --title "改善：登入流程"
+adowi create-issue --title "改善：登入流程"
 
 # 建立 Task 並關聯到 parent Issue
-ado --org MyOrg --project MyProject wi create-task --title "新增匯出按鈕" --parent 1234
+adowi create-task --title "新增匯出按鈕" --parent 1234
 
 # 建立 Task 並附上 HTML 說明
-ado --org MyOrg --project MyProject wi create-task \
+adowi create-task \
   --title "修正逾時問題" \
   --description "<p>將 timeout 從 30 秒調整為 60 秒</p>" \
   --parent 1234
@@ -146,7 +148,7 @@ ado --org MyOrg --project MyProject wi create-task \
 一個指令完成 Issue + Task + commit 關聯：
 
 ```bash
-ado --org MyOrg --project MyProject wi create-card \
+adowi create-card \
   --issue-title "改善：檔案上傳穩定性" \
   --task-title "修正上傳逾時" \
   --task-description "<p>根因：30 秒 timeout 不足</p>" \
@@ -158,44 +160,44 @@ ado --org MyOrg --project MyProject wi create-card \
 
 ```bash
 # 查詢單一 Work Item
-ado --org MyOrg --project MyProject wi get 1234
+adowi get 1234
 
 # 依條件列出 Work Items
-ado --org MyOrg --project MyProject wi list --iteration "Project\Sprint 2026-05"
-ado --org MyOrg --project MyProject wi list --state Active --type Task
-ado --org MyOrg --project MyProject wi list --assigned-to "王小明"
+adowi list --iteration "Project\Sprint 2026-05"
+adowi list --state Active --type Task
+adowi list --assigned-to "王小明"
 
 # 列出父項目的所有子項
-ado --org MyOrg --project MyProject wi children 1234
+adowi children 1234
 
 # 執行自訂 WIQL 查詢
-ado --org MyOrg --project MyProject wi query "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'"
+adowi query "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'"
 ```
 
 ### Work Items — 更新
 
 ```bash
 # 更新欄位
-ado --org MyOrg --project MyProject wi update 1234 --title "新標題" --state Active
+adowi update 1234 --title "新標題" --state Active
 
 # 快速關閉
-ado --org MyOrg --project MyProject wi close 1234
+adowi close 1234
 
 # 快速指派
-ado --org MyOrg --project MyProject wi assign 1234 --to "王小明"
+adowi assign 1234 --to "王小明"
 ```
 
 ### Work Items — 留言與刪除
 
 ```bash
 # 新增留言
-ado --org MyOrg --project MyProject wi comment 1234 --text "已部署到 staging"
+adowi comment 1234 --text "已部署到 staging"
 
 # 刪除（移到資源回收筒）
-ado --org MyOrg --project MyProject wi delete 1234
+adowi delete 1234
 
 # 永久刪除
-ado --org MyOrg --project MyProject wi delete 1234 --destroy
+adowi delete 1234 --destroy
 ```
 
 ### Repo 資訊與 Commit 關聯
@@ -205,10 +207,10 @@ ado --org MyOrg --project MyProject wi delete 1234 --destroy
 ado repo info --remote-url "https://dev.azure.com/MyOrg/MyProject/_git/MyRepo"
 
 # 或手動指定
-ado --org MyOrg repo info --repo-project MyProject --repo-name MyRepo
+ado repo info --repo-project MyProject --repo-name MyRepo
 
 # 將 commit 關聯到 Task
-ado --org MyOrg --project MyProject wi link-commit \
+adowi link-commit \
   --task-id 1234 \
   --project-id <guid> \
   --repo-id <guid> \
@@ -222,7 +224,7 @@ ado --org MyOrg --project MyProject wi link-commit \
 git add -A && git commit -m "fix: 修正逾時問題" && git push
 
 # 2. 取得當前 Sprint
-ado --org MyOrg --project MyProject sprint current
+adosprint current
 # → { "path": "Project\\Sprint 2026-05", ... }
 
 # 3. 取得 repo 資訊
@@ -230,7 +232,7 @@ ado repo info --remote-url "$(git remote get-url origin)"
 # → { "projectId": "xxx", "repoId": "yyy", ... }
 
 # 4. 一步開卡
-ado --org MyOrg --project MyProject wi create-card \
+adowi create-card \
   --issue-title "改善：檔案上傳穩定性" \
   --task-title "修正上傳逾時" \
   --task-description "<p>30 秒 timeout 對大檔不足</p>" \
@@ -263,7 +265,7 @@ ado --org MyOrg --project MyProject wi create-card \
 ## Claude Code Skill
 
 安裝的 skill 讓 Claude 能夠：
-- 探索組織和專案（`ado --org ORG projects`）
+- 探索組織和專案（`ado projects`）
 - 查詢 Sprint 和 Work Items
 - 一步完成開卡片（Issue + Task + commit 關聯）
 - 自動執行複雜工作流程
