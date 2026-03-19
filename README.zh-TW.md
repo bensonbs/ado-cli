@@ -15,7 +15,7 @@
 ## 安裝
 
 ```bash
-git clone https://github.com/aspect-apps/ado-cli.git
+git clone https://github.com/bensonbs/ado-cli.git
 cd ado-cli
 npm install
 npm link

@@ -15,7 +15,7 @@ A lightweight CLI tool for Azure DevOps sprint and work item operations. Designe
 ## Installation
 
 ```bash
-git clone https://github.com/aspect-apps/ado-cli.git
+git clone https://github.com/bensonbs/ado-cli.git
 cd ado-cli
 npm install
 npm link
