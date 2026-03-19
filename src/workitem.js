@@ -1,26 +1,26 @@
-const { request, patchWorkItem, BASE, PROJECT } = require("./api");
+const { request, patchWorkItem } = require("./api");
 
-const ENC_PROJECT = encodeURIComponent(PROJECT);
+function enc(ctx) { return encodeURIComponent(ctx.project); }
 
 // ─── Create ──────────────────────────────────────────────
 
-async function createIssue({ title, iterationPath, areaPath }) {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/wit/workitems/$Issue?api-version=7.1`;
+async function createIssue(ctx, { title, iterationPath, areaPath }) {
+  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/$Issue?api-version=7.1`;
   const doc = [
     { op: "add", path: "/fields/System.Title", value: title },
-    { op: "add", path: "/fields/System.IterationPath", value: iterationPath || PROJECT },
-    { op: "add", path: "/fields/System.AreaPath", value: areaPath || PROJECT },
+    { op: "add", path: "/fields/System.IterationPath", value: iterationPath || ctx.project },
+    { op: "add", path: "/fields/System.AreaPath", value: areaPath || ctx.area },
   ];
-  const result = await patchWorkItem(url, doc);
-  return { id: result.id, url: result._links?.html?.href || result.url, title: result.fields["System.Title"] };
+  const r = await patchWorkItem(ctx, url, doc);
+  return { id: r.id, url: r._links?.html?.href || r.url, title: r.fields["System.Title"] };
 }
 
-async function createTask({ title, description, iterationPath, areaPath, parentId }) {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/wit/workitems/$Task?api-version=7.1`;
+async function createTask(ctx, { title, description, iterationPath, areaPath, parentId }) {
+  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/$Task?api-version=7.1`;
   const doc = [
     { op: "add", path: "/fields/System.Title", value: title },
-    { op: "add", path: "/fields/System.IterationPath", value: iterationPath || PROJECT },
-    { op: "add", path: "/fields/System.AreaPath", value: areaPath || PROJECT },
+    { op: "add", path: "/fields/System.IterationPath", value: iterationPath || ctx.project },
+    { op: "add", path: "/fields/System.AreaPath", value: areaPath || ctx.area },
   ];
   if (description) {
     doc.push({ op: "add", path: "/fields/System.Description", value: description });
@@ -31,20 +31,20 @@ async function createTask({ title, description, iterationPath, areaPath, parentI
       path: "/relations/-",
       value: {
         rel: "System.LinkTypes.Hierarchy-Reverse",
-        url: `${BASE}/${ENC_PROJECT}/_apis/wit/workItems/${parentId}`,
+        url: `${ctx.base}/${enc(ctx)}/_apis/wit/workItems/${parentId}`,
         attributes: { comment: "Parent link" },
       },
     });
   }
-  const result = await patchWorkItem(url, doc);
-  return { id: result.id, url: result._links?.html?.href || result.url, title: result.fields["System.Title"] };
+  const r = await patchWorkItem(ctx, url, doc);
+  return { id: r.id, url: r._links?.html?.href || r.url, title: r.fields["System.Title"] };
 }
 
 // ─── Read ────────────────────────────────────────────────
 
-async function get({ id }) {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/wit/workitems/${id}?$expand=relations&api-version=7.1`;
-  const r = await request(url);
+async function get(ctx, { id }) {
+  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/${id}?$expand=relations&api-version=7.1`;
+  const r = await request(ctx, url);
   return {
     id: r.id,
     type: r.fields["System.WorkItemType"],
@@ -56,26 +56,26 @@ async function get({ id }) {
   };
 }
 
-async function list({ iterationPath, state, type, assignedTo }) {
-  const conditions = [`[System.TeamProject] = '${PROJECT}'`];
+async function list(ctx, { iterationPath, state, type, assignedTo }) {
+  const conditions = [`[System.TeamProject] = '${ctx.project}'`];
   if (iterationPath) conditions.push(`[System.IterationPath] = '${iterationPath}'`);
   if (state) conditions.push(`[System.State] = '${state}'`);
   if (type) conditions.push(`[System.WorkItemType] = '${type}'`);
   if (assignedTo) conditions.push(`[System.AssignedTo] = '${assignedTo}'`);
 
   const wiql = `SELECT [System.Id] FROM WorkItems WHERE ${conditions.join(" AND ")} ORDER BY [System.Id] DESC`;
-  return await queryWiql(wiql);
+  return await queryWiql(ctx, wiql);
 }
 
-async function queryWiql(wiql) {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/wit/wiql?api-version=7.1`;
-  const data = await request(url, { method: "POST", body: { query: wiql } });
+async function queryWiql(ctx, wiql) {
+  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/wiql?api-version=7.1`;
+  const data = await request(ctx, url, { method: "POST", body: { query: wiql } });
 
   if (!data.workItems || data.workItems.length === 0) return [];
 
   const ids = data.workItems.map((w) => w.id).slice(0, 200);
-  const batchUrl = `${BASE}/${ENC_PROJECT}/_apis/wit/workitems?ids=${ids.join(",")}&fields=System.Id,System.Title,System.State,System.WorkItemType,System.AssignedTo,System.IterationPath&api-version=7.1`;
-  const batch = await request(batchUrl);
+  const batchUrl = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems?ids=${ids.join(",")}&fields=System.Id,System.Title,System.State,System.WorkItemType,System.AssignedTo,System.IterationPath&api-version=7.1`;
+  const batch = await request(ctx, batchUrl);
 
   return batch.value.map((r) => ({
     id: r.id,
@@ -87,19 +87,15 @@ async function queryWiql(wiql) {
   }));
 }
 
-async function children({ id }) {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/wit/workitems/${id}?$expand=relations&api-version=7.1`;
-  const r = await request(url);
+async function children(ctx, { id }) {
+  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/${id}?$expand=relations&api-version=7.1`;
+  const r = await request(ctx, url);
   const childRels = (r.relations || []).filter((rel) => rel.rel === "System.LinkTypes.Hierarchy-Forward");
   if (childRels.length === 0) return [];
 
-  const childIds = childRels.map((rel) => {
-    const parts = rel.url.split("/");
-    return parts[parts.length - 1];
-  });
-
-  const batchUrl = `${BASE}/${ENC_PROJECT}/_apis/wit/workitems?ids=${childIds.join(",")}&fields=System.Id,System.Title,System.State,System.WorkItemType,System.AssignedTo&api-version=7.1`;
-  const batch = await request(batchUrl);
+  const childIds = childRels.map((rel) => rel.url.split("/").pop());
+  const batchUrl = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems?ids=${childIds.join(",")}&fields=System.Id,System.Title,System.State,System.WorkItemType,System.AssignedTo&api-version=7.1`;
+  const batch = await request(ctx, batchUrl);
 
   return batch.value.map((r) => ({
     id: r.id,
@@ -112,8 +108,8 @@ async function children({ id }) {
 
 // ─── Update ──────────────────────────────────────────────
 
-async function update({ id, title, description, state, assignedTo, iterationPath, areaPath }) {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/wit/workitems/${id}?api-version=7.1`;
+async function update(ctx, { id, title, description, state, assignedTo, iterationPath, areaPath }) {
+  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/${id}?api-version=7.1`;
   const doc = [];
   if (title) doc.push({ op: "replace", path: "/fields/System.Title", value: title });
   if (description) doc.push({ op: "replace", path: "/fields/System.Description", value: description });
@@ -124,43 +120,43 @@ async function update({ id, title, description, state, assignedTo, iterationPath
 
   if (doc.length === 0) throw new Error("No fields to update");
 
-  const result = await patchWorkItem(url, doc);
+  const r = await patchWorkItem(ctx, url, doc);
   return {
-    id: result.id,
-    title: result.fields["System.Title"],
-    state: result.fields["System.State"],
-    assignedTo: result.fields["System.AssignedTo"]?.displayName || null,
+    id: r.id,
+    title: r.fields["System.Title"],
+    state: r.fields["System.State"],
+    assignedTo: r.fields["System.AssignedTo"]?.displayName || null,
   };
 }
 
-async function close({ id }) {
-  return await update({ id, state: "Closed" });
+async function close(ctx, { id }) {
+  return await update(ctx, { id, state: "Closed" });
 }
 
-async function assign({ id, assignedTo }) {
-  return await update({ id, assignedTo });
+async function assign(ctx, { id, assignedTo }) {
+  return await update(ctx, { id, assignedTo });
 }
 
 // ─── Comment ─────────────────────────────────────────────
 
-async function addComment({ id, text }) {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/wit/workItems/${id}/comments?api-version=7.1-preview.4`;
-  const data = await request(url, { method: "POST", body: { text } });
+async function addComment(ctx, { id, text }) {
+  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workItems/${id}/comments?api-version=7.1-preview.4`;
+  const data = await request(ctx, url, { method: "POST", body: { text } });
   return { id: data.id, workItemId: data.workItemId, text: data.text };
 }
 
 // ─── Delete ──────────────────────────────────────────────
 
-async function remove({ id, destroy }) {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/wit/workitems/${id}?destroy=${!!destroy}&api-version=7.1`;
-  await request(url, { method: "DELETE" });
+async function remove(ctx, { id, destroy }) {
+  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/${id}?destroy=${!!destroy}&api-version=7.1`;
+  await request(ctx, url, { method: "DELETE" });
   return { id, deleted: true, permanent: !!destroy };
 }
 
 // ─── Link ────────────────────────────────────────────────
 
-async function linkCommit({ taskId, projectId, repoId, commitSha }) {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/wit/workitems/${taskId}?api-version=7.1`;
+async function linkCommit(ctx, { taskId, projectId, repoId, commitSha }) {
+  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/${taskId}?api-version=7.1`;
   const artifactUrl = `vstfs:///Git/Commit/${projectId}%2F${repoId}%2F${commitSha}`;
   const doc = [
     {
@@ -173,30 +169,24 @@ async function linkCommit({ taskId, projectId, repoId, commitSha }) {
       },
     },
   ];
-  const result = await patchWorkItem(url, doc);
-  return { id: result.id, linked: true };
+  const r = await patchWorkItem(ctx, url, doc);
+  return { id: r.id, linked: true };
 }
 
 // ─── Composite: create-card ──────────────────────────────
 
-async function createCard({ issueTitle, taskTitle, taskDescription, iterationPath, areaPath, commitInfo }) {
-  // 1. Create Issue
-  const issue = await createIssue({ title: issueTitle, iterationPath, areaPath });
-
-  // 2. Create Task linked to Issue
-  const task = await createTask({
+async function createCard(ctx, { issueTitle, taskTitle, taskDescription, iterationPath, areaPath, commitInfo }) {
+  const issue = await createIssue(ctx, { title: issueTitle, iterationPath, areaPath });
+  const task = await createTask(ctx, {
     title: taskTitle,
     description: taskDescription,
     iterationPath,
     areaPath,
     parentId: issue.id,
   });
-
   const result = { issue, task };
-
-  // 3. Link commit if provided
   if (commitInfo) {
-    const link = await linkCommit({
+    const link = await linkCommit(ctx, {
       taskId: task.id,
       projectId: commitInfo.projectId,
       repoId: commitInfo.repoId,
@@ -204,7 +194,6 @@ async function createCard({ issueTitle, taskTitle, taskDescription, iterationPat
     });
     result.commitLinked = link.linked;
   }
-
   return result;
 }
 

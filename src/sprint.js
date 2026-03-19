@@ -1,10 +1,9 @@
-const { request, BASE, PROJECT } = require("./api");
+const { request } = require("./api");
 
-const ENC_PROJECT = encodeURIComponent(PROJECT);
-
-async function getCurrent() {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/work/teamsettings/iterations?api-version=7.1`;
-  const data = await request(url);
+async function getCurrent(ctx) {
+  const enc = encodeURIComponent(ctx.project);
+  const url = `${ctx.base}/${enc}/_apis/work/teamsettings/iterations?api-version=7.1`;
+  const data = await request(ctx, url);
   const current = data.value.find((i) => i.attributes.timeFrame === "current");
   if (!current) throw new Error("No current sprint found");
   return {
@@ -16,9 +15,10 @@ async function getCurrent() {
   };
 }
 
-async function list({ timeFrame } = {}) {
-  const url = `${BASE}/${ENC_PROJECT}/_apis/work/teamsettings/iterations?api-version=7.1`;
-  const data = await request(url);
+async function list(ctx, { timeFrame } = {}) {
+  const enc = encodeURIComponent(ctx.project);
+  const url = `${ctx.base}/${enc}/_apis/work/teamsettings/iterations?api-version=7.1`;
+  const data = await request(ctx, url);
   let items = data.value;
   if (timeFrame) items = items.filter((i) => i.attributes.timeFrame === timeFrame);
   return items.map((i) => ({
@@ -31,26 +31,24 @@ async function list({ timeFrame } = {}) {
   }));
 }
 
-async function workitems({ iterationId } = {}) {
+async function workitems(ctx, { iterationId } = {}) {
   let iterId = iterationId;
   if (!iterId) {
-    const current = await getCurrent();
+    const current = await getCurrent(ctx);
     iterId = current.id;
   }
 
-  const url = `${BASE}/${ENC_PROJECT}/_apis/work/teamsettings/iterations/${iterId}/workitems?api-version=7.1`;
-  const data = await request(url);
+  const enc = encodeURIComponent(ctx.project);
+  const url = `${ctx.base}/${enc}/_apis/work/teamsettings/iterations/${iterId}/workitems?api-version=7.1`;
+  const data = await request(ctx, url);
 
   if (!data.workItemRelations || data.workItemRelations.length === 0) return [];
 
-  const ids = data.workItemRelations
-    .filter((r) => r.target)
-    .map((r) => r.target.id);
-
+  const ids = data.workItemRelations.filter((r) => r.target).map((r) => r.target.id);
   if (ids.length === 0) return [];
 
-  const batchUrl = `${BASE}/${ENC_PROJECT}/_apis/wit/workitems?ids=${ids.slice(0, 200).join(",")}&fields=System.Id,System.Title,System.State,System.WorkItemType,System.AssignedTo,System.IterationPath&api-version=7.1`;
-  const batch = await request(batchUrl);
+  const batchUrl = `${ctx.base}/${enc}/_apis/wit/workitems?ids=${ids.slice(0, 200).join(",")}&fields=System.Id,System.Title,System.State,System.WorkItemType,System.AssignedTo,System.IterationPath&api-version=7.1`;
+  const batch = await request(ctx, batchUrl);
 
   return batch.value.map((r) => ({
     id: r.id,

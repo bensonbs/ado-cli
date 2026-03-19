@@ -15,21 +15,33 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-const ORG = process.env.ADO_ORG;
-const PROJECT = process.env.ADO_PROJECT;
-const PAT = process.env.ADO_PAT;
-
-if (!PAT) {
-  console.error("Error: ADO_PAT not set. Check .env file at", path.resolve(__dirname, "../.env"));
-  process.exit(1);
+/**
+ * Create an API context from CLI global options.
+ * Only PAT is required (from .env or --pat flag).
+ * org / project / area are per-command and passed by the LLM.
+ */
+function createContext({ org, project, area, pat, requireOrg = true } = {}) {
+  const resolvedPat = pat || process.env.ADO_PAT;
+  if (!resolvedPat) {
+    console.error("Error: PAT not provided. Use --pat flag or set ADO_PAT in .env");
+    process.exit(1);
+  }
+  if (requireOrg && !org) {
+    console.error("Error: Organization not provided. Use --org flag.");
+    process.exit(1);
+  }
+  return {
+    org: org || null,
+    project: project || null,
+    area: area || project || null,
+    base: org ? `https://dev.azure.com/${org}` : null,
+    auth: "Basic " + Buffer.from(`:${resolvedPat}`).toString("base64"),
+  };
 }
 
-const BASE = `https://dev.azure.com/${ORG}`;
-const AUTH = "Basic " + Buffer.from(`:${PAT}`).toString("base64");
-
-async function request(url, { method = "GET", body, contentType = "application/json" } = {}) {
-  const headers = { Authorization: AUTH };
-  if (body) headers["Content-Type"] = contentType;
+async function request(ctx, url, { method = "GET", body } = {}) {
+  const headers = { Authorization: ctx.auth };
+  if (body) headers["Content-Type"] = "application/json";
 
   const res = await fetch(url, {
     method,
@@ -39,11 +51,7 @@ async function request(url, { method = "GET", body, contentType = "application/j
 
   const text = await res.text();
   let data;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    data = text;
-  }
+  try { data = JSON.parse(text); } catch { data = text; }
 
   if (!res.ok) {
     const msg = typeof data === "object" ? JSON.stringify(data, null, 2) : data;
@@ -52,10 +60,9 @@ async function request(url, { method = "GET", body, contentType = "application/j
   return data;
 }
 
-// PATCH with JSON Patch content type (for work item operations)
-async function patchWorkItem(url, patchDoc) {
+async function patchWorkItem(ctx, url, patchDoc) {
   const headers = {
-    Authorization: AUTH,
+    Authorization: ctx.auth,
     "Content-Type": "application/json-patch+json",
   };
   const res = await fetch(url, {
@@ -65,11 +72,7 @@ async function patchWorkItem(url, patchDoc) {
   });
   const text = await res.text();
   let data;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    data = text;
-  }
+  try { data = JSON.parse(text); } catch { data = text; }
   if (!res.ok) {
     const msg = typeof data === "object" ? JSON.stringify(data, null, 2) : data;
     throw new Error(`HTTP ${res.status}: ${msg}`);
@@ -77,4 +80,4 @@ async function patchWorkItem(url, patchDoc) {
   return data;
 }
 
-module.exports = { request, patchWorkItem, BASE, ORG, PROJECT };
+module.exports = { createContext, request, patchWorkItem };
