@@ -17,8 +17,7 @@ if (fs.existsSync(envPath)) {
 
 /**
  * Create an API context from CLI global options.
- * Only PAT is required (from .env or --pat flag).
- * org / project / area are per-command and passed by the LLM.
+ * CLI flags override .env defaults: ADO_PAT, ADO_ORG, ADO_PROJECT, ADO_AREA_PATH
  */
 function createContext({ org, project, area, pat, requireOrg = true } = {}) {
   const resolvedPat = pat || process.env.ADO_PAT;
@@ -26,15 +25,19 @@ function createContext({ org, project, area, pat, requireOrg = true } = {}) {
     console.error("Error: PAT not provided. Use --pat flag or set ADO_PAT in .env");
     process.exit(1);
   }
-  if (requireOrg && !org) {
-    console.error("Error: Organization not provided. Use --org flag.");
+  const resolvedOrg = org || process.env.ADO_ORG;
+  const resolvedProject = project || process.env.ADO_PROJECT;
+  const resolvedArea = area || process.env.ADO_AREA_PATH || resolvedProject;
+
+  if (requireOrg && !resolvedOrg) {
+    console.error("Error: Organization not provided. Use --org flag or set ADO_ORG in .env");
     process.exit(1);
   }
   return {
-    org: org || null,
-    project: project || null,
-    area: area || project || null,
-    base: org ? `https://dev.azure.com/${org}` : null,
+    org: resolvedOrg || null,
+    project: resolvedProject || null,
+    area: resolvedArea || null,
+    base: resolvedOrg ? `https://dev.azure.com/${resolvedOrg}` : null,
     auth: "Basic " + Buffer.from(`:${resolvedPat}`).toString("base64"),
   };
 }

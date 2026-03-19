@@ -9,33 +9,36 @@ allowed-tools: Bash(ado *)
 
 You have access to the `ado` CLI tool for Azure DevOps operations. All commands output clean JSON.
 
-## Global Options (required per command)
+## Global Options
 
 | Flag | Description |
 |------|-------------|
-| `--org <org>` | Azure DevOps organization name |
-| `--project <project>` | Azure DevOps project name |
+| `--org <org>` | Azure DevOps organization (optional if `ADO_ORG` set in .env) |
+| `--project <project>` | Azure DevOps project (optional if `ADO_PROJECT` set in .env) |
 | `--area <area>` | Area path (defaults to `--project`) |
 | `--pat <token>` | Override PAT from `.env` |
 
-> PAT is pre-configured in `~/ado-cli/.env`. You only need to pass `--org` and `--project`.
+> Defaults are read from `~/ado-cli/.env`. Flags override defaults. Use flags to operate across different orgs/projects.
 
 ## Discovery
 
 ```bash
 # Verify PAT & show current user
-ado --org ORG whoami
+ado whoami
 
-# List all projects in an org
-ado --org ORG projects
+# List all projects in the default org
+ado projects
+
+# List projects in a different org
+ado --org OtherOrg projects
 ```
 
 ## Sprint
 
 ```bash
-ado --org ORG --project PROJ sprint current
-ado --org ORG --project PROJ sprint list --timeframe current|past|future
-ado --org ORG --project PROJ sprint workitems [--iteration-id ID]
+ado sprint current
+ado sprint list --timeframe current|past|future
+ado sprint workitems [--iteration-id ID]
 ```
 
 ## Work Items
@@ -44,13 +47,13 @@ ado --org ORG --project PROJ sprint workitems [--iteration-id ID]
 
 ```bash
 # Issue (parent)
-ado --org ORG --project PROJ wi create-issue --title "TITLE" [--iteration PATH] [--area PATH]
+ado wi create-issue --title "TITLE" [--iteration PATH] [--area PATH]
 
 # Task (child) — use --parent to link
-ado --org ORG --project PROJ wi create-task --title "TITLE" [--description "HTML"] [--iteration PATH] [--parent ID]
+ado wi create-task --title "TITLE" [--description "HTML"] [--iteration PATH] [--parent ID]
 
 # Composite: Issue + Task + commit link in one step
-ado --org ORG --project PROJ wi create-card \
+ado wi create-card \
   --issue-title "TITLE" --task-title "TITLE" \
   [--task-description "HTML"] [--iteration PATH] \
   [--project-id GUID --repo-id GUID --commit SHA]
@@ -59,25 +62,25 @@ ado --org ORG --project PROJ wi create-card \
 ### Read
 
 ```bash
-ado --org ORG --project PROJ wi get ID
-ado --org ORG --project PROJ wi list [--iteration PATH] [--state STATE] [--type TYPE] [--assigned-to NAME]
-ado --org ORG --project PROJ wi children ID
-ado --org ORG --project PROJ wi query "WIQL"
+ado wi get ID
+ado wi list [--iteration PATH] [--state STATE] [--type TYPE] [--assigned-to NAME]
+ado wi children ID
+ado wi query "WIQL"
 ```
 
 ### Update
 
 ```bash
-ado --org ORG --project PROJ wi update ID [--title T] [--description HTML] [--state STATE] [--assigned-to NAME] [--iteration PATH]
-ado --org ORG --project PROJ wi close ID
-ado --org ORG --project PROJ wi assign ID --to NAME
+ado wi update ID [--title T] [--description HTML] [--state STATE] [--assigned-to NAME] [--iteration PATH]
+ado wi close ID
+ado wi assign ID --to NAME
 ```
 
 ### Comment & Delete
 
 ```bash
-ado --org ORG --project PROJ wi comment ID --text "TEXT"
-ado --org ORG --project PROJ wi delete ID [--destroy]
+ado wi comment ID --text "TEXT"
+ado wi delete ID [--destroy]
 ```
 
 ## Repo & Commit Linking
@@ -85,10 +88,9 @@ ado --org ORG --project PROJ wi delete ID [--destroy]
 ```bash
 # Get projectId/repoId (auto-parses org from URL)
 ado repo info --remote-url "REMOTE_URL"
-ado --org ORG repo info --repo-project PROJ --repo-name REPO
 
 # Link commit to work item
-ado --org ORG --project PROJ wi link-commit --task-id ID --project-id GUID --repo-id GUID --commit SHA
+ado wi link-commit --task-id ID --project-id GUID --repo-id GUID --commit SHA
 ```
 
 ## 「開卡片並 commit」Workflow
@@ -96,11 +98,11 @@ ado --org ORG --project PROJ wi link-commit --task-id ID --project-id GUID --rep
 When the user says **「開卡片並 commit」**, follow this sequence:
 
 1. **Commit & push** the code changes
-2. **Get current sprint**: `ado --org ORG --project PROJ sprint current` → extract `path`
+2. **Get current sprint**: `ado sprint current` → extract `path`
 3. **Get repo info**: `ado repo info --remote-url "$(git remote get-url origin)"` → extract `projectId`, `repoId`
 4. **Create card** (Issue + Task + commit link):
    ```bash
-   ado --org ORG --project PROJ wi create-card \
+   ado wi create-card \
      --issue-title "改善：NON_TECHNICAL_TITLE" \
      --task-title "NON_TECHNICAL_TITLE" \
      --task-description "<p>TECHNICAL_DETAILS_HTML</p>" \
@@ -115,13 +117,24 @@ When the user says **「開卡片並 commit」**, follow this sequence:
 
 **Variant — 「掛到 #XXXX」**: Skip Issue creation, create Task only:
 ```bash
-ado --org ORG --project PROJ wi create-task \
-  --title "TITLE" --description "HTML" --iteration PATH --parent XXXX
+ado wi create-task --title "TITLE" --description "HTML" --iteration PATH --parent XXXX
+```
+
+## Cross-org operations
+
+Override defaults with flags:
+```bash
+# Different org
+ado --org OtherOrg projects
+ado --org OtherOrg --project OtherProject sprint current
+
+# Different project (same org)
+ado --project OtherProject wi list --state Active
 ```
 
 ## Tips
 
 - All output is JSON — parse `id`, `url`, `path` fields from responses
-- Use `ado --org ORG projects` to discover available projects
+- Use `ado projects` to discover available projects
 - `--area` defaults to `--project` value if omitted
 - Sprint iteration paths follow format: `ProjectName\Sprint YYYY-MM`
