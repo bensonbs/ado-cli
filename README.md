@@ -16,40 +16,80 @@ Supports **multi-org and multi-project** operations — the PAT is stored once i
 - **Multi-org** — `--org` and `--project` flags allow cross-org/project operations
 - **Clean JSON output** — All commands output JSON to stdout for easy parsing
 
-## Installation
+## Quick Start
+
+```bash
+# 1. Clone & install CLI
+git clone https://github.com/bensonbs/ado-cli.git
+cd ado-cli
+npm install
+npm link
+
+# 2. Set your PAT
+cp .env.example .env
+echo "ADO_PAT=your-token-here" > .env
+
+# 3. Install Claude Code skill (optional but recommended)
+./install-skill.sh
+
+# 4. Verify
+ado --org your-org whoami
+```
+
+Done. You now have the `ado` CLI globally and the `/ado` skill in Claude Code.
+
+## Installation Details
+
+### Step 1 — CLI Tool
 
 ```bash
 git clone https://github.com/bensonbs/ado-cli.git
 cd ado-cli
 npm install
-npm link
+npm link    # makes `ado` available globally
 ```
 
-After `npm link`, the `ado` command is available globally.
-
-## Configuration
-
-Copy the example env file and add your PAT:
+### Step 2 — PAT Configuration
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` and add your Personal Access Token:
 
 ```
 ADO_PAT=your-personal-access-token
 ```
 
-That's it. Organization and project are passed as CLI flags, allowing the same PAT to work across multiple projects.
+Organization and project are passed as CLI flags per command, so a single PAT is all you need.
 
-### Getting a PAT
+#### Getting a PAT
 
 1. Go to `https://dev.azure.com/{your-org}/_usersSettings/tokens`
 2. Create a new token with **Work Items (Read & Write)** and **Code (Read)** scopes
 3. Copy the token into your `.env` file
 
 > **Security**: The `.env` file is git-ignored and never leaves your machine.
+
+### Step 3 — Claude Code Skill (Optional)
+
+If you use [Claude Code](https://docs.anthropic.com/en/docs/claude-code), install the agent skill so Claude can use `ado` commands autonomously:
+
+```bash
+# Global install — available in all projects
+./install-skill.sh
+```
+
+Or install to a specific project only:
+
+```bash
+mkdir -p your-project/.claude/skills/ado
+cp .claude/skills/ado/SKILL.md your-project/.claude/skills/ado/
+```
+
+After installation:
+- `/ado` is available as a slash command
+- Claude auto-invokes the skill when you mention sprints, work items, or ADO
 
 ## Global Options
 
@@ -221,34 +261,15 @@ ado --org MyOrg --project MyProject wi create-card \
 | `ado wi link-commit` | Link commit to work item |
 | `ado repo info` | Get repo project/repo GUIDs |
 
-## Use with Claude Code (Agent Skill)
+## Claude Code Skill
 
-This repo includes a built-in **Claude Code skill**. Once installed, Claude can autonomously use all `ado` commands.
-
-### Install the skill
-
-```bash
-# Option 1: Install globally (available in all projects)
-./install-skill.sh
-
-# Option 2: Copy to a specific project
-mkdir -p your-project/.claude/skills/ado
-cp .claude/skills/ado/SKILL.md your-project/.claude/skills/ado/
-```
-
-After installation, you can:
-- Use `/ado` as a slash command in Claude Code
-- Claude will auto-invoke the skill when you mention sprints, work items, or 開卡片
-
-### What the skill does
-
-The skill teaches Claude how to:
+The installed skill teaches Claude to:
 - Discover orgs and projects (`ado --org ORG projects`)
 - Query sprints and work items
 - Create cards (Issue + Task + commit link) in one step
-- Follow the 「開卡片並 commit」workflow automatically
+- Follow complex workflows automatically
 
-No need to add anything to `CLAUDE.md` — the skill handles everything.
+No need to edit `CLAUDE.md` — the skill handles everything.
 
 ## License
 

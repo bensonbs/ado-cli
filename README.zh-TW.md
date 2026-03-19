@@ -16,40 +16,80 @@
 - **跨組織** — `--org` 和 `--project` flag 支援跨組織/專案操作
 - **乾淨 JSON 輸出** — 所有指令輸出 JSON，方便程式解析
 
-## 安裝
+## 快速開始
+
+```bash
+# 1. 下載並安裝 CLI
+git clone https://github.com/bensonbs/ado-cli.git
+cd ado-cli
+npm install
+npm link
+
+# 2. 設定 PAT
+cp .env.example .env
+echo "ADO_PAT=your-token-here" > .env
+
+# 3. 安裝 Claude Code skill（選用但建議）
+./install-skill.sh
+
+# 4. 驗證
+ado --org your-org whoami
+```
+
+完成。你現在有全域的 `ado` 指令，以及 Claude Code 中的 `/ado` skill。
+
+## 安裝細節
+
+### 步驟 1 — CLI 工具
 
 ```bash
 git clone https://github.com/bensonbs/ado-cli.git
 cd ado-cli
 npm install
-npm link
+npm link    # 讓 `ado` 全域可用
 ```
 
-`npm link` 後，`ado` 指令即可全域使用。
-
-## 設定
-
-複製範例設定檔並加入你的 PAT：
+### 步驟 2 — PAT 設定
 
 ```bash
 cp .env.example .env
 ```
 
-編輯 `.env`：
+編輯 `.env`，加入你的 Personal Access Token：
 
 ```
 ADO_PAT=你的-personal-access-token
 ```
 
-就這樣。組織和專案透過 CLI flag 傳入，同一個 PAT 可以操作多個專案。
+組織和專案透過 CLI flag 傳入，一個 PAT 就夠了。
 
-### 取得 PAT
+#### 取得 PAT
 
 1. 前往 `https://dev.azure.com/{你的組織}/_usersSettings/tokens`
 2. 建立新 token，勾選 **Work Items（讀取和寫入）** 和 **Code（讀取）** 範圍
 3. 將 token 複製到 `.env` 檔
 
 > **安全性**：`.env` 已被 git ignore，不會進入版本控制。
+
+### 步驟 3 — Claude Code Skill（選用）
+
+如果你使用 [Claude Code](https://docs.anthropic.com/en/docs/claude-code)，安裝 agent skill 讓 Claude 可以自主操作 `ado`：
+
+```bash
+# 全域安裝 — 所有專案都可用
+./install-skill.sh
+```
+
+或只安裝到特定專案：
+
+```bash
+mkdir -p your-project/.claude/skills/ado
+cp .claude/skills/ado/SKILL.md your-project/.claude/skills/ado/
+```
+
+安裝後：
+- `/ado` 可作為 slash command 使用
+- 當你提到 sprint、work item、ADO 時，Claude 會自動載入此 skill
 
 ## 全域選項
 
@@ -220,33 +260,15 @@ ado --org MyOrg --project MyProject wi create-card \
 | `ado wi link-commit` | 關聯 Commit |
 | `ado repo info` | 取得 repo 的 project/repo GUID |
 
-## 搭配 Claude Code 使用（Agent Skill）
+## Claude Code Skill
 
-此 repo 內建 **Claude Code skill**。安裝後，Claude 可以自主使用所有 `ado` 指令。
-
-### 安裝 skill
-
-```bash
-# 方法 1：全域安裝（所有專案都可用）
-./install-skill.sh
-
-# 方法 2：安裝到特定專案
-mkdir -p your-project/.claude/skills/ado
-cp .claude/skills/ado/SKILL.md your-project/.claude/skills/ado/
-```
-
-安裝後：
-- 可在 Claude Code 中使用 `/ado` slash command
-- 當你提到 sprint、work item、開卡片、ADO 時，Claude 會自動載入此 skill
-
-### Skill 提供的能力
-
+安裝的 skill 讓 Claude 能夠：
 - 探索組織和專案（`ado --org ORG projects`）
 - 查詢 Sprint 和 Work Items
 - 一步完成開卡片（Issue + Task + commit 關聯）
-- 自動執行「開卡片並 commit」流程
+- 自動執行複雜工作流程
 
-不需要在 `CLAUDE.md` 加任何東西 — skill 會處理一切。
+不需要編輯 `CLAUDE.md` — skill 會處理一切。
 
 ## 授權
 
