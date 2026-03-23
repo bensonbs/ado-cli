@@ -155,9 +155,18 @@ async function remove(ctx, { id, destroy }) {
 
 // ─── Link ────────────────────────────────────────────────
 
+function resolveFullSha(commitSha) {
+  if (commitSha.length >= 40) return commitSha;
+  const { execSync } = require("child_process");
+  const full = execSync(`git rev-parse ${commitSha}`, { encoding: "utf8" }).trim();
+  if (full.length < 40) throw new Error(`Cannot resolve short SHA: ${commitSha}`);
+  return full;
+}
+
 async function linkCommit(ctx, { taskId, projectId, repoId, commitSha }) {
+  const fullSha = resolveFullSha(commitSha);
   const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/${taskId}?api-version=7.1`;
-  const artifactUrl = `vstfs:///Git/Commit/${projectId}%2F${repoId}%2F${commitSha}`;
+  const artifactUrl = `vstfs:///Git/Commit/${projectId}%2F${repoId}%2F${fullSha}`;
   const doc = [
     {
       op: "add",
@@ -170,7 +179,7 @@ async function linkCommit(ctx, { taskId, projectId, repoId, commitSha }) {
     },
   ];
   const r = await patchWorkItem(ctx, url, doc);
-  return { id: r.id, linked: true };
+  return { id: r.id, linked: true, commitSha: fullSha };
 }
 
 // ─── Composite: create-card ──────────────────────────────
