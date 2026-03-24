@@ -85,12 +85,17 @@ ado wi delete ID [--destroy]
 
 ## Repo & Commit Linking
 
+**IMPORTANT:**
+1. Before running `ado wi link-commit`, ensure the commit has been `git push`ed to the remote. Linking a local-only commit will result in ADO being unable to display the actual content.
+2. `--commit` must use the **full 40-character SHA**. Short SHAs produce broken links in ADO. Use `git rev-parse <short>` to resolve the full SHA.
+
 ```bash
 # Get projectId/repoId (auto-parses org from URL)
 ado repo info --remote-url "REMOTE_URL"
 
-# Link commit to work item
-ado wi link-commit --task-id ID --project-id GUID --repo-id GUID --commit SHA
+# Link commit to work item (must be pushed + full 40-char SHA!)
+FULL_SHA=$(git rev-parse <short-sha>)
+ado wi link-commit --task-id ID --project-id GUID --repo-id GUID --commit $FULL_SHA
 ```
 
 ## 「開卡片並 commit」Workflow
