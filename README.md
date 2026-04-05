@@ -273,6 +273,16 @@ The installed skill teaches Claude to:
 
 No need to edit `CLAUDE.md` — the skill handles everything.
 
+## Changelog
+
+### 2026-04-06
+
+- **Skill: Added sprint card rules and HTML description templates**
+  - Issue/Task hierarchy definition and title prefix conventions
+  - Task sizing principle: one Task = one deliverable outcome
+  - HTML description templates for Issue, Task, and Incident Record
+  - Comment guidelines (ADO does not support Markdown — use HTML)
+
 ## License
 
 MIT

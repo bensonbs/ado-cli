@@ -272,6 +272,16 @@ adowi create-card \
 
 不需要編輯 `CLAUDE.md` — skill 會處理一切。
 
+## 更新紀錄
+
+### 2026-04-06
+
+- **Skill：新增 Sprint 卡片規則與 HTML 描述模板**
+  - Issue/Task 層級定義與 Title 前綴規則（改善：/新增：/修復：/事件記錄：/評估：）
+  - Task 大小原則：一個 Task = 一個可交付成果，不按問題拆
+  - Issue / Task / 事件記錄的 HTML Description 模板
+  - Comment 注意事項（ADO 不支援 Markdown，必須用 HTML）
+
 ## 授權
 
 MIT
