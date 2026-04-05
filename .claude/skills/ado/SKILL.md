@@ -98,6 +98,75 @@ FULL_SHA=$(git rev-parse <short-sha>)
 ado wi link-commit --task-id ID --project-id GUID --repo-id GUID --commit $FULL_SHA
 ```
 
+## Sprint 卡片規則
+
+### 卡片層級
+
+| 層級 | 用途 | 誰看 |
+|------|------|------|
+| **Issue**（parent） | 一個使用者可感知的改善或功能 | 全團隊 |
+| **Task**（child） | 一個可獨立交付、可驗收的工作成果 | 工程師 |
+
+### Title 規則
+- **非技術語言**（團隊多非工程背景）
+- Issue 前綴：「改善：」「新增：」「修復：」「事件記錄：」「評估：」
+- Task 描述具體交付成果
+
+### Task 大小原則
+- **一個 Task = 一個可交付的成果**，不按問題或實驗拆
+- 過程中的 bug、嘗試與排除 → 寫在該 Task 的**備註或 Comment**，不另開 Task
+- 卡片數量不代表工時，工時用 Comment 或 Completed Work 欄位體現
+- 不在這個 Sprint 做 → 移到 Backlog 或 Title 加 `[Pending]`
+
+### Description HTML 模板
+
+**Issue：**
+```html
+<h3>背景</h3>
+<p>為什麼要做這件事</p>
+
+<h3>目標</h3>
+<p>做完後的預期效果（使用者角度）</p>
+
+<h3>影響範圍</h3>
+<p>影響哪些服務/角色/客戶</p>
+```
+
+**Task：**
+```html
+<h3>做什麼</h3>
+<p>具體工作內容</p>
+
+<h3>驗收標準</h3>
+<ul>
+<li>可量化的完成條件</li>
+</ul>
+
+<h3>備註</h3>
+<p>技術細節、限制、相依項目（選填）</p>
+```
+
+**事件記錄（Issue，通常不需要 Task，除非有後續預防措施）：**
+```html
+<h3>事件</h3>
+<p>什麼時候、發生了什麼事、影響範圍</p>
+
+<h3>原因</h3>
+<p>root cause</p>
+
+<h3>處理方式</h3>
+<p>怎麼修的、何時恢復</p>
+
+<h3>後續預防</h3>
+<p>避免再次發生的措施（選填）</p>
+```
+
+### Comment 注意事項
+- ADO Comment **不支援 Markdown**，必須用 HTML
+- **完整歷程** → Issue Comment
+- **工作紀錄**（做了什麼、踩了什麼坑） → Task Comment
+- **策略決定** → Issue Description
+
 ## 「開卡片並 commit」Workflow
 
 When the user says **「開卡片並 commit」**, follow this sequence:
@@ -105,20 +174,15 @@ When the user says **「開卡片並 commit」**, follow this sequence:
 1. **Commit & push** the code changes
 2. **Get current sprint**: `ado sprint current` → extract `path`
 3. **Get repo info**: `ado repo info --remote-url "$(git remote get-url origin)"` → extract `projectId`, `repoId`
-4. **Create card** (Issue + Task + commit link):
+4. **Create card** (Issue + Task + commit link), using the description templates above:
    ```bash
    ado wi create-card \
      --issue-title "改善：NON_TECHNICAL_TITLE" \
      --task-title "NON_TECHNICAL_TITLE" \
-     --task-description "<p>TECHNICAL_DETAILS_HTML</p>" \
+     --task-description "HTML_USING_TEMPLATE" \
      --iteration "SPRINT_PATH" \
      --project-id GUID --repo-id GUID --commit SHA
    ```
-
-**Title rules:**
-- Use **non-technical language** (team has non-engineering members)
-- Prefix with 「改善：」for improvements or 「新增：」for new features
-- Put technical details only in `--task-description` (HTML format)
 
 **Variant — 「掛到 #XXXX」**: Skip Issue creation, create Task only:
 ```bash
