@@ -112,7 +112,12 @@ async function update(ctx, { id, title, description, state, assignedTo, iteratio
   const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/${id}?api-version=7.1`;
   const doc = [];
   if (title) doc.push({ op: "replace", path: "/fields/System.Title", value: title });
-  if (description) doc.push({ op: "replace", path: "/fields/System.Description", value: description });
+  if (description) {
+    const current = await request(ctx, `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/${id}?fields=System.Description&api-version=7.1`);
+    const existing = current.fields["System.Description"];
+    const merged = existing ? `${existing}${description}` : description;
+    doc.push({ op: "replace", path: "/fields/System.Description", value: merged });
+  }
   if (state) doc.push({ op: "replace", path: "/fields/System.State", value: state });
   if (assignedTo) doc.push({ op: "replace", path: "/fields/System.AssignedTo", value: assignedTo });
   if (iterationPath) doc.push({ op: "replace", path: "/fields/System.IterationPath", value: iterationPath });
