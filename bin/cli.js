@@ -5,6 +5,7 @@ const sprint = require("../src/sprint");
 const workitem = require("../src/workitem");
 const repo = require("../src/repo");
 const org = require("../src/org");
+const pipeline = require("../src/pipeline");
 
 const out = (data) => console.log(JSON.stringify(data, null, 2));
 
@@ -223,5 +224,58 @@ repoCmd
     const ctx = createContext({ org, project, pat: g.pat });
     out(await repo.getRepoInfo(ctx, project, repoName));
   }));
+
+// ─── Pipeline ─────────────────────────────────────────────
+const pipelineCmd = program.command("pipeline").alias("pipe").description("Pipeline operations");
+
+pipelineCmd
+  .command("list")
+  .description("List all pipelines in the project")
+  .option("--top <n>", "Max results to return")
+  .action(run(async function (opts) { out(await pipeline.list(getCtx(this), { top: opts.top })); }));
+
+pipelineCmd
+  .command("get <id>")
+  .description("Get pipeline details")
+  .action(run(async function (id) { out(await pipeline.get(getCtx(this), { id })); }));
+
+pipelineCmd
+  .command("runs <id>")
+  .description("List recent runs for a pipeline")
+  .option("--top <n>", "Max results to return", "10")
+  .action(run(async function (id, opts) { out(await pipeline.runs(getCtx(this), { id, top: opts.top })); }));
+
+pipelineCmd
+  .command("run-get <id> <runId>")
+  .description("Get details of a specific pipeline run")
+  .action(run(async function (id, runId) { out(await pipeline.getRun(getCtx(this), { id, runId })); }));
+
+pipelineCmd
+  .command("run <id>")
+  .description("Trigger a new pipeline run")
+  .option("--branch <branch>", "Branch to run (default: pipeline default branch)")
+  .option("--var <key=value...>", "Variables to pass (can repeat: --var k1=v1 --var k2=v2)")
+  .action(run(async function (id, opts) {
+    let variables;
+    if (opts.var) {
+      variables = {};
+      for (const kv of opts.var) {
+        const idx = kv.indexOf("=");
+        if (idx === -1) throw new Error(`Invalid --var format: "${kv}", expected key=value`);
+        variables[kv.slice(0, idx)] = { value: kv.slice(idx + 1) };
+      }
+    }
+    out(await pipeline.run(getCtx(this), { id, branch: opts.branch, variables }));
+  }));
+
+pipelineCmd
+  .command("logs <id> <runId>")
+  .description("List log entries for a pipeline run")
+  .action(run(async function (id, runId) { out(await pipeline.logs(getCtx(this), { id, runId })); }));
+
+pipelineCmd
+  .command("log <id> <runId> <logId>")
+  .description("Get log content for a specific log entry")
+  .action(run(async function (id, runId, logId) { out(await pipeline.getLog(getCtx(this), { id, runId, logId })); }));
 
 program.parse();
