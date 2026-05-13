@@ -6,6 +6,7 @@ const workitem = require("../src/workitem");
 const repo = require("../src/repo");
 const org = require("../src/org");
 const pipeline = require("../src/pipeline");
+const pr = require("../src/pr");
 
 const out = (data) => console.log(JSON.stringify(data, null, 2));
 
@@ -192,6 +193,80 @@ wiCmd
       taskId: Number(opts.taskId), projectId: opts.projectId,
       repoId: opts.repoId, commitSha: opts.commit,
     }));
+  }));
+
+// ─── Pull Request ─────────────────────────────────────────
+const prCmd = program.command("pr").description("Pull request operations");
+
+prCmd
+  .command("create")
+  .description("Create a pull request")
+  .requiredOption("--title <title>", "PR title")
+  .requiredOption("--repo-id <id>", "Repository GUID (from: ado repo info)")
+  .option("--source <branch>", "Source branch (defaults to current git branch)")
+  .option("--target <branch>", "Target branch (default: main)")
+  .option("--description <text>", "PR description (markdown supported)")
+  .option("--draft", "Create as draft PR")
+  .option("--work-items <ids>", "Comma-separated work item IDs to link")
+  .action(run(async function (opts) {
+    const { execSync } = require("child_process");
+    const sourceBranch = opts.source || execSync("git branch --show-current").toString().trim();
+    const targetBranch = opts.target || "main";
+    const workItemIds = opts.workItems ? opts.workItems.split(",").map((s) => s.trim()) : [];
+    out(await pr.createPR(getCtx(this), {
+      repoId: opts.repoId,
+      title: opts.title,
+      description: opts.description,
+      sourceBranch,
+      targetBranch,
+      isDraft: !!opts.draft,
+      workItemIds,
+    }));
+  }));
+
+prCmd
+  .command("list")
+  .description("List pull requests")
+  .requiredOption("--repo-id <id>", "Repository GUID")
+  .option("--status <status>", "Filter by status: active, abandoned, completed, all (default: active)")
+  .option("--top <n>", "Max results (default: 20)")
+  .action(run(async function (opts) {
+    out(await pr.listPRs(getCtx(this), {
+      repoId: opts.repoId,
+      status: opts.status || "active",
+      top: opts.top ? Number(opts.top) : 20,
+    }));
+  }));
+
+prCmd
+  .command("get <id>")
+  .description("Get a pull request by ID")
+  .requiredOption("--repo-id <id>", "Repository GUID")
+  .action(run(async function (id, opts) {
+    out(await pr.getPR(getCtx(this), { repoId: opts.repoId, pullRequestId: Number(id) }));
+  }));
+
+prCmd
+  .command("update <id>")
+  .description("Update a pull request title or description")
+  .requiredOption("--repo-id <id>", "Repository GUID")
+  .option("--title <title>", "New title")
+  .option("--description <text>", "New description")
+  .action(run(async function (id, opts) {
+    out(await pr.updatePR(getCtx(this), {
+      repoId: opts.repoId,
+      pullRequestId: Number(id),
+      title: opts.title,
+      description: opts.description,
+    }));
+  }));
+
+prCmd
+  .command("abandon <id>")
+  .description("Abandon a pull request")
+  .requiredOption("--repo-id <id>", "Repository GUID")
+  .action(run(async function (id, opts) {
+    out(await pr.abandonPR(getCtx(this), { repoId: opts.repoId, pullRequestId: Number(id) }));
   }));
 
 // ─── Repo ─────────────────────────────────────────────────

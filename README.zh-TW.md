@@ -36,7 +36,7 @@ cp .env.example .env
 ado whoami
 ```
 
-完成。你現在有全域的 `ado` 指令，以及 Claude Code 中的 `/ado` skill。
+完成。你現在有全域的 `ado` 指令，以及 Claude Code 中的 `/ado` 和 `/ado-pr` skill。
 
 ## 安裝細節
 
@@ -90,7 +90,8 @@ cp .claude/skills/ado/SKILL.md your-project/.claude/skills/ado/
 ```
 
 安裝後：
-- `/ado` 可作為 slash command 使用
+- `/ado` 可作為 slash command，用於 sprint 和 work item 操作
+- `/ado-pr` 可作為 slash command，用於建立 Pull Request
 - 當你提到 sprint、work item、ADO 時，Claude 會自動載入此 skill
 
 ## 全域選項
@@ -262,7 +263,9 @@ adowi create-card \
 | `ado wi link-commit` | 關聯 Commit |
 | `ado repo info` | 取得 repo 的 project/repo GUID |
 
-## Claude Code Skill
+## Claude Code Skills
+
+### `/ado` — Work Item 與 Sprint 操作
 
 安裝的 skill 讓 Claude 能夠：
 - 探索組織和專案（`ado projects`）
@@ -270,9 +273,30 @@ adowi create-card \
 - 一步完成開卡片（Issue + Task + commit 關聯）
 - 自動執行複雜工作流程
 
+### `/ado-pr` — Pull Request 建立
+
+自動化完整的 PR 工作流：
+- 分析當前分支與目標分支之間的 commit 差異
+- 產生 PR 標題與說明（繁體中文）
+- push 前先詢問確認
+- 透過 ADO REST API 建立 PR
+
+```
+/ado-pr          # 目標 branch 預設為 main
+/ado-pr develop  # 目標 branch 為 develop
+```
+
 不需要編輯 `CLAUDE.md` — skill 會處理一切。
 
 ## 更新紀錄
+
+### 2026-05-13
+
+- **Skill：新增 `/ado-pr`，支援 Azure DevOps Pull Request 建立**
+  - 分析與目標 branch 的 git 差異，自動產生 PR 標題與說明
+  - push 前先詢問使用者確認
+  - 透過 ADO REST API 建立 PR（無額外相依套件）
+  - `install-skill.sh` 現在同時安裝 `/ado` 和 `/ado-pr`
 
 ### 2026-04-06
 
