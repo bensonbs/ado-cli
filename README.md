@@ -36,7 +36,7 @@ cp .env.example .env
 ado whoami
 ```
 
-Done. You now have the `ado` CLI globally and the `/ado` skill in Claude Code.
+Done. You now have the `ado` CLI globally and the `/ado` and `/ado-pr` skills in Claude Code.
 
 ## Installation Details
 
@@ -90,7 +90,8 @@ cp .claude/skills/ado/SKILL.md your-project/.claude/skills/ado/
 ```
 
 After installation:
-- `/ado` is available as a slash command
+- `/ado` is available as a slash command for sprint and work item operations
+- `/ado-pr` is available as a slash command for creating Pull Requests
 - Claude auto-invokes the skill when you mention sprints, work items, or ADO
 
 ## Global Options
@@ -263,7 +264,9 @@ adowi create-card \
 | `ado wi link-commit` | Link commit to work item |
 | `ado repo info` | Get repo project/repo GUIDs |
 
-## Claude Code Skill
+## Claude Code Skills
+
+### `/ado` — Work Item & Sprint Operations
 
 The installed skill teaches Claude to:
 - Discover orgs and projects (`ado projects`)
@@ -271,9 +274,30 @@ The installed skill teaches Claude to:
 - Create cards (Issue + Task + commit link) in one step
 - Follow complex workflows automatically
 
-No need to edit `CLAUDE.md` — the skill handles everything.
+### `/ado-pr` — Pull Request Creation
+
+Automates the full PR workflow:
+- Analyzes commits between current branch and target branch
+- Generates PR title and description (in Traditional Chinese)
+- Asks for confirmation before pushing
+- Creates the PR via ADO REST API
+
+```
+/ado-pr          # target branch defaults to main
+/ado-pr develop  # target branch is develop
+```
+
+No need to edit `CLAUDE.md` — the skills handle everything.
 
 ## Changelog
+
+### 2026-05-13
+
+- **Skill: Added `/ado-pr` for Azure DevOps Pull Request creation**
+  - Analyzes git diff vs target branch, generates PR title and description
+  - Confirms with user before pushing and creating the PR
+  - Creates PR via ADO REST API (no extra dependencies)
+  - `install-skill.sh` now installs both `/ado` and `/ado-pr`
 
 ### 2026-04-06
 

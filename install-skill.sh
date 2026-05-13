@@ -1,10 +1,18 @@
 #!/bin/bash
-# Install ado-cli skill to ~/.claude/skills/ for global access in Claude Code
+# Install ado-cli skills to ~/.claude/skills/ for global access in Claude Code
 
-SKILL_DIR="$HOME/.claude/skills/ado"
+SCRIPT_DIR="$(dirname "$0")"
 
-mkdir -p "$SKILL_DIR"
-cp "$(dirname "$0")/.claude/skills/ado/SKILL.md" "$SKILL_DIR/SKILL.md"
+install_skill() {
+  local name="$1"
+  local dest="$HOME/.claude/skills/$name"
+  mkdir -p "$dest"
+  cp "$SCRIPT_DIR/.claude/skills/$name/SKILL.md" "$dest/SKILL.md"
+  echo "Skill installed to $dest"
+}
 
-echo "Skill installed to $SKILL_DIR"
-echo "You can now use /ado in any Claude Code session."
+install_skill "ado"
+install_skill "ado-pr"
+
+echo ""
+echo "You can now use /ado and /ado-pr in any Claude Code session."
