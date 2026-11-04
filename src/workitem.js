@@ -144,7 +144,7 @@ async function assign(ctx, { id, assignedTo }) {
 
 // ─── Comment ─────────────────────────────────────────────
 
-// format 預設 markdown：ADO 留言預設是 HTML，直接貼 markdown 會把 ** 與 - 原樣顯示出來。
+// Default to markdown: ADO otherwise treats comment text as HTML, so ** and - show up literally.
 async function addComment(ctx, { id, text, format = "markdown" }) {
   const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workItems/${id}/comments?format=${format}&api-version=7.1-preview.4`;
   const data = await request(ctx, url, { method: "POST", body: { text } });

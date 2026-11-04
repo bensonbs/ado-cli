@@ -193,7 +193,9 @@ adowi assign 1234 --to "John Doe"
 
 ```bash
 # Add a comment
-adowi comment 1234 --text "Deployed to staging"
+adowi comment 1234 --text "Deployed to **staging**"   # markdown by default
+adowi comment 1234 --file notes.md                    # read text from a file
+adowi comment 1234 --text "<b>HTML</b>" --format html
 
 # Delete (moves to recycle bin)
 adowi delete 1234
@@ -305,7 +307,7 @@ No need to edit `CLAUDE.md` — the skills handle everything.
   - Issue/Task hierarchy definition and title prefix conventions
   - Task sizing principle: one Task = one deliverable outcome
   - HTML description templates for Issue, Task, and Incident Record
-  - Comment guidelines (ADO does not support Markdown — use HTML)
+  - Comment guidelines (comments are sent as Markdown by default; use `--format html` for HTML)
 
 ## License
 

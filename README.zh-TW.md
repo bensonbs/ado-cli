@@ -192,7 +192,9 @@ adowi assign 1234 --to "王小明"
 
 ```bash
 # 新增留言
-adowi comment 1234 --text "已部署到 staging"
+adowi comment 1234 --text "已部署到 **staging**"   # 預設 markdown
+adowi comment 1234 --file notes.md                # 從檔案讀內容
+adowi comment 1234 --text "<b>HTML</b>" --format html
 
 # 刪除（移到資源回收筒）
 adowi delete 1234
@@ -304,7 +306,7 @@ adowi create-card \
   - Issue/Task 層級定義與 Title 前綴規則（改善：/新增：/修復：/事件記錄：/評估：）
   - Task 大小原則：一個 Task = 一個可交付成果，不按問題拆
   - Issue / Task / 事件記錄的 HTML Description 模板
-  - Comment 注意事項（ADO 不支援 Markdown，必須用 HTML）
+  - Comment 注意事項（預設以 Markdown 送出；要送 HTML 加 `--format html`）
 
 ## 授權
 
