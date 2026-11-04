@@ -87,16 +87,41 @@ ado wi delete ID [--destroy]
 
 **IMPORTANT:**
 1. Before running `ado wi link-commit`, ensure the commit has been `git push`ed to the remote. Linking a local-only commit will result in ADO being unable to display the actual content.
-2. `--commit` must use the **full 40-character SHA**. Short SHAs produce broken links in ADO. Use `git rev-parse <short>` to resolve the full SHA.
+2. `--commit` accepts a short SHA: the CLI resolves it to the full 40-character SHA with `git rev-parse`. Run the command inside that repo's directory, or the lookup fails.
 
 ```bash
 # Get projectId/repoId (auto-parses org from URL)
 ado repo info --remote-url "REMOTE_URL"
 
-# Link commit to work item (must be pushed + full 40-char SHA!)
-FULL_SHA=$(git rev-parse <short-sha>)
-ado wi link-commit --task-id ID --project-id GUID --repo-id GUID --commit $FULL_SHA
+# Link commit to work item (must be pushed; short SHA is resolved in the current repo)
+ado wi link-commit --task-id ID --project-id GUID --repo-id GUID --commit <sha>
 ```
+
+## Pull Requests
+
+```bash
+ado pr create --repo-id GUID --title "TITLE" --source BRANCH [--target main] [--description "TEXT"] [--draft] [--work-items 1234,5678]
+ado pr list --repo-id GUID [--status active|abandoned|completed|all] [--top N]
+ado pr get ID --repo-id GUID
+ado pr update ID --repo-id GUID [--title T] [--description TEXT]
+ado pr abandon ID --repo-id GUID
+```
+
+> **Always pass `--source` explicitly.** Without it, the CLI uses the branch of the *current working directory*. If you run `ado` from another directory (for example, the ado-cli checkout), it picks that repo's branch and ADO returns `TF401398 ... source and/or the target branch no longer exists`.
+
+## Pipelines
+
+```bash
+ado pipeline list [--top N]                  # find the pipeline id
+ado pipeline get ID
+ado pipeline runs ID [--top 10]              # recent runs
+ado pipeline run-get ID RUN_ID
+ado pipeline logs ID RUN_ID                  # list log entries
+ado pipeline log ID RUN_ID LOG_ID            # read one log
+ado pipeline run ID [--branch B] [--var k=v ...]
+```
+
+> ⚠️ `ado pipeline run` really triggers the pipeline, including deployments. Only run it when the user explicitly asks.
 
 ## Sprint 卡片規則
 
