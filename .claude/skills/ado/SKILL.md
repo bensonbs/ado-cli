@@ -47,23 +47,26 @@ ado sprint workitems [--iteration-id ID]
 
 ```bash
 # Issue (parent)
-ado wi create-issue --title "TITLE" [--iteration PATH] [--area PATH]
+ado wi create-issue --title "TITLE" [--iteration PATH] [--area PATH] [--tags "a; b"]
 
 # Task (child) — use --parent to link
-ado wi create-task --title "TITLE" [--description "HTML"] [--iteration PATH] [--parent ID]
+ado wi create-task --title "TITLE" [--description "HTML"] [--iteration PATH] [--parent ID] [--tags "a; b"]
 
 # Composite: Issue + Task + commit link in one step
 ado wi create-card \
   --issue-title "TITLE" --task-title "TITLE" \
   [--task-description "HTML"] [--iteration PATH] \
-  [--project-id GUID --repo-id GUID --commit SHA]
+  [--project-id GUID --repo-id GUID --commit SHA] \
+  [--tags "a; b"]
 ```
+
+Tags are semicolon-separated (`--tags "P1; bug"`).
 
 ### Read
 
 ```bash
 ado wi get ID
-ado wi list [--iteration PATH] [--state STATE] [--type TYPE] [--assigned-to NAME]
+ado wi list [--iteration PATH] [--state STATE] [--type TYPE] [--assigned-to NAME] [--tag TAG]
 ado wi children ID
 ado wi query "WIQL"
 ```
@@ -71,7 +74,8 @@ ado wi query "WIQL"
 ### Update
 
 ```bash
-ado wi update ID [--title T] [--description HTML] [--state STATE] [--assigned-to NAME] [--iteration PATH]
+ado wi update ID [--title T] [--description HTML] [--state STATE] [--assigned-to NAME] [--iteration PATH] [--tags "a; b"]
+# --tags appends (merged with existing tags, never clobbers)
 ado wi close ID
 ado wi assign ID --to NAME
 ```
