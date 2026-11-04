@@ -144,10 +144,11 @@ async function assign(ctx, { id, assignedTo }) {
 
 // ─── Comment ─────────────────────────────────────────────
 
-async function addComment(ctx, { id, text }) {
-  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workItems/${id}/comments?api-version=7.1-preview.4`;
+// Default to markdown: ADO otherwise treats comment text as HTML, so ** and - show up literally.
+async function addComment(ctx, { id, text, format = "markdown" }) {
+  const url = `${ctx.base}/${enc(ctx)}/_apis/wit/workItems/${id}/comments?format=${format}&api-version=7.1-preview.4`;
   const data = await request(ctx, url, { method: "POST", body: { text } });
-  return { id: data.id, workItemId: data.workItemId, text: data.text };
+  return { id: data.id, workItemId: data.workItemId, format: data.format, text: data.text };
 }
 
 // ─── Delete ──────────────────────────────────────────────

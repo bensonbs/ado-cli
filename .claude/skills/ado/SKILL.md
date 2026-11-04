@@ -79,7 +79,8 @@ ado wi assign ID --to NAME
 ### Comment & Delete
 
 ```bash
-ado wi comment ID --text "TEXT"
+ado wi comment ID --text "TEXT"          # markdown by default (--format html for HTML)
+ado wi comment ID --file path.md         # read long text from a file, avoids shell quoting
 ado wi delete ID [--destroy]
 ```
 
@@ -187,7 +188,7 @@ ado pipeline run ID [--branch B] [--var k=v ...]
 ```
 
 ### Comment 注意事項
-- ADO Comment **不支援 Markdown**，必須用 HTML
+- `ado wi comment` 預設以 Markdown 送出（`--format markdown`）；要送 HTML 時加 `--format html`
 - **完整歷程** → Issue Comment
 - **工作紀錄**（做了什麼、踩了什麼坑） → Task Comment
 - **策略決定** → Issue Description
