@@ -133,7 +133,7 @@ async function update(ctx, { id, title, description, state, assignedTo, iteratio
   if (iterationPath) doc.push({ op: "replace", path: "/fields/System.IterationPath", value: iterationPath });
   if (areaPath) doc.push({ op: "replace", path: "/fields/System.AreaPath", value: areaPath });
   if (tags) {
-    // ponytail: append semantics — merge with existing tags so labels never clobber each other
+    // Append semantics: merge with existing tags so labels never clobber each other
     const current = await request(ctx, `${ctx.base}/${enc(ctx)}/_apis/wit/workitems/${id}?fields=System.Tags&api-version=7.1`);
     const existing = (current.fields["System.Tags"] || "").split(";").map((t) => t.trim()).filter(Boolean);
     const incoming = joinTags(tags).split(";").map((t) => t.trim()).filter(Boolean);
